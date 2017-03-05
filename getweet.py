@@ -1,24 +1,17 @@
 import twitter
 
 file=open("twitter.auth", "r")
-auth=["","","",""]
-i = 0
-for line in file:
-	print line
-	auth[i] = line.rstrip()
-	i+=1
-#print auth
+auth=["","","",""]		# Kein Plan ob das eleganter geht
+i = 0				# ich hasse mein Leben
+for line in file:		#
+	auth[i] = line.rstrip()	# Eleganz neu definiert
+	i+=1			#
 
-api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=auth[2],access_token_secret=auth[3])
+api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=auth[2],access_token_secret=auth[3])	# I HAVE A AUTHENTICATION https://www.youtube.com/watch?v=3vDWWy4CMhE
 
-#print(api.VerifyCredentials())
+#print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
 
-#trump_tweets = twper.user_timeline("realDonaldTrump", count=100)
-#for tweet in trump_tweets:
-#	print tweet.
-#	print tweet.text
-
-trump_tweets = api.GetUserTimeline(screen_name="realDonaldTrump")
-for tweet in trump_tweets:
-	print tweet
-	print ""
+trump_tweets = api.GetUserTimeline(screen_name="realDonaldTrump")	# keep calm & api.getUserTimeline
+for tweet in trump_tweets:						#
+	print tweet							# Tweets aufschreiben
+	print ""							# und säuberlich trennen

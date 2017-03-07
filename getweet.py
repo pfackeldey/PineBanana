@@ -7,7 +7,7 @@ from pprint import pprint
 wordlist = [""]
 
 def getWords(tweet):
-	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore'))
+	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore').lower()) #Falls möglich zusätzliche Befehle anhängen. Definitiv nicht unübersichtlich genug
 	print tweet_wordlist
 	for word in tweet_wordlist:
 		wordlist.append(word)

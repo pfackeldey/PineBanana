@@ -1,6 +1,16 @@
+# coding=utf-8
 import twitter
+import unicodedata
 from collections import *
 from pprint import pprint
+
+wordlist = [""]
+
+def getWords(tweet):
+	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore'))
+	
+	for word in tweet_wordlist:
+		wordlist.append(word)
 
 file=open("twitter.auth", "r")
 auth=["","","",""]		# Kein Plan ob das eleganter geht
@@ -14,11 +24,13 @@ api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=
 #print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
 
 trump_tweets = api.GetUserTimeline(screen_name="realDonaldTrump")	# keep calm & api.getUserTimeline
-for tweet in trump_tweets:						#
-	print tweet							# Tweets aufschreiben
-	print ""							# und säuberlich trennen
 
-counts = Counter(trump_tweets).most_common(10)				#10 häufigste worte in allen tweets zusammen (top ten)
+for tweet in trump_tweets:
+	getWords(tweet)
+	pprint(tweet)							# Tweets aufschreiben
+	pprint("")							# und säuberlich trennen
+
+counts = Counter(wordlist).most_common(10)				#10 häufigste worte in allen tweets zusammen (top ten)
 pprint(counts)								#pretty print the top ten
 	 
 

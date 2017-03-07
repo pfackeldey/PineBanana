@@ -1,4 +1,6 @@
 import twitter
+from collections import *
+from pprint import pprint
 
 file=open("twitter.auth", "r")
 auth=["","","",""]		# Kein Plan ob das eleganter geht
@@ -15,3 +17,8 @@ trump_tweets = api.GetUserTimeline(screen_name="realDonaldTrump")	# keep calm & 
 for tweet in trump_tweets:						#
 	print tweet							# Tweets aufschreiben
 	print ""							# und säuberlich trennen
+
+counts = Counter(trump_tweets).most_common(10)				#10 häufigste worte in allen tweets zusammen (top ten)
+pprint(counts)								#pretty print the top ten
+	 
+

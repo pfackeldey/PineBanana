@@ -7,7 +7,7 @@ from pprint import pprint
 
 filterlist=["",""] #könnte nützlich werden
 wordlist = [""]
-target = "haqfleisch"
+target = "haqfleisch" #Wessen Tweets lesen?
 
 def getWords(tweet):
 	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore').lower()) #Falls möglich zusätzliche Befehle anhängen. Definitiv nicht unübersichtlich genug
@@ -30,7 +30,7 @@ api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=
 l = 0
 firstrun = 1
 lastID = 822501803615014918
-while l <= 50000:
+while l <= 50000: #50k Tweets sollten reichen
 	if firstrun==1:
 		print "Running for the first time"
 		tweets = api.GetUserTimeline(screen_name=target, since_id=lastID, count=200, exclude_replies=1, include_rts=0,) #first TWT since_id 822501803615014918
@@ -53,7 +53,7 @@ for tweet in tweets:
 	pprint(tweet)							# Tweets aufschreiben
 	pprint("")							# und säuberlich trennen
 
-counts = Counter(wordlist).most_common(50)				#10 häufigste Worte in allen tweets zusammen (top ten)
+counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen
 pprint(counts)								#pretty print the top ten
 	 
 

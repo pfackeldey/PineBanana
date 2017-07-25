@@ -27,26 +27,22 @@ api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=
 
 #print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
 
-l = 0
-firstrun = 1
-lastID = 822501803615014918
-while l <= 50000: #50k Tweets sollten reichen
-	if firstrun==1:
-		print "Running for the first time"
-		tweets = api.GetUserTimeline(screen_name=target, since_id=lastID, count=200, exclude_replies=1, include_rts=0,) #first TWT since_id 822501803615014918
-		firstrun = firstrun + 1
-	else:
-		print "Running for ", firstrun, " times."
-		tweets.extend(api.GetUserTimeline(screen_name=target, since_id=lastID, count=200, exclude_replies=1, include_rts=0,))
-		firstrun = firstrun + 1
+tweets = []
 
-	l = len(tweets)
-	if lastID == tweets[l-1].id:
-		print "Ich habe alles gesehen..."
-		break
-	lastID = tweets[l-1].id
-	print l, " Tweets in Tweets"
-	print "Grabbing tweets from lastID: ", lastID
+new_tweets = api.GetUserTimeline(screen_name=target, count=200, exclude_replies=1, include_rts=0,)
+
+tweets.extend(new_tweets)
+
+lastID = tweets[-1].id - 1
+
+while len(new_tweets) > 0:
+	print "Getting tweets before ", tweets[-1].created_at
+	
+	new_tweets = api.GetUserTimeline(screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0,)
+	
+	tweets.extend(new_tweets)
+	
+	lastID = tweets[-1].id - 1
 
 for tweet in tweets:    		
 	getWords(tweet)

@@ -19,7 +19,11 @@ def getWords(tweet):
 		if word not in filterlist:
 			wordlist.append(word)
 	return tweet_wordlist
-	
+
+def FileSave(filename,content):
+    with open(filename, "a") as myfile:
+        myfile.write(content)
+
 api = doAPI("twitter.auth")
 
 
@@ -35,25 +39,25 @@ lastID = tweets[-1].id - 1
 
 while len(new_tweets) > 0:
 	print "Getting tweets before ", tweets[-1].created_at
-	
+
 	new_tweets = api.GetUserTimeline(screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0,)
-	
+
 	tweets.extend(new_tweets)
-	
+
 	lastID = tweets[-1].id - 1
 
-for tweet in tweets:    		
+for tweet in tweets:
 	words_inTweet = getWords(tweet)
 	pprint(tweet)							# Tweets aufschreiben
 	pprint("")							# und säuberlich trennen
-	
+
 	if(len(badWordList) > 0):
 		deleteIfBadWord(api, tweet, words_inTweet, badWordList)
 	else:
 		print "Keine badWordList angegeben, also keine Löschungen"
-	
+
+	FileSave("tweets.txt",tweet+"\n")
+
 
 counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen
 pprint(counts)								#pretty print the top ten
-	 
-

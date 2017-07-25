@@ -1,4 +1,4 @@
-# coding=utf-8
+# -*- coding: utf-8 -*-
 import sys
 import twitter
 import unicodedata
@@ -7,13 +7,14 @@ from twitterutils import *
 from collections import *
 from pprint import pprint
 
+tweets = []
 wordlist = [""]
 filterlist = [] #Um z.B. "ich" oder "-" rauszuholen oder so
 badWordList = [] #Experiment zum Löschen von Tweets in denen Keywords stehen
 target = sys.argv[1] #Wessen Tweets lesen? Jetzt über das erste Argument der Konsole spezifiziert
 
 def getWords(tweet):
-	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore').lower()) #Falls möglich zusätzliche Befehle anhängen. Definitiv nicht unübersichtlich genug
+	tweet_wordlist = str.split(unicode(tweet.text).encode('UTF-8').lower())
 #	print tweet_wordlist
 	for word in tweet_wordlist:
 		if word not in filterlist:
@@ -22,14 +23,12 @@ def getWords(tweet):
 
 def FileSave(filename,content):
     with open(filename, "a") as myfile:
-        myfile.write(content)
+        myfile.writelines(content)
+
 
 api = doAPI("twitter.auth")
-
-
 #print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
 
-tweets = []
 
 new_tweets = api.GetUserTimeline(screen_name=target, count=200, exclude_replies=1, include_rts=0,)
 
@@ -56,7 +55,12 @@ for tweet in tweets:
 	else:
 		print "Keine badWordList angegeben, also keine Löschungen"
 
-	FileSave("tweets.txt",tweet+"\n")
+
+	#clean Tweet.text
+	clean = unicode(tweet.text).encode('UTF-8','ignore') + "\n\n"
+
+	FileSave("tweets.txt", clean)
+	
 
 
 counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen

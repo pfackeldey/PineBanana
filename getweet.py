@@ -1,13 +1,16 @@
 # coding=utf-8
+import sys
 import twitter
 import unicodedata
 import json
+from twitterutils import *
 from collections import *
 from pprint import pprint
 
-filterlist=["",""] #könnte nützlich werden
 wordlist = [""]
-target = "haqfleisch" #Wessen Tweets lesen?
+filterlist = [] #Um z.B. "ich" oder "-" rauszuholen oder so
+badWordList = [] #Experiment zum Löschen von Tweets in denen Keywords stehen
+target = sys.argv[1] #Wessen Tweets lesen? Jetzt über das erste Argument der Konsole spezifiziert
 
 def getWords(tweet):
 	tweet_wordlist = str.split(unicodedata.normalize('NFKD', tweet.text).encode('ascii','ignore').lower()) #Falls möglich zusätzliche Befehle anhängen. Definitiv nicht unübersichtlich genug
@@ -15,15 +18,10 @@ def getWords(tweet):
 	for word in tweet_wordlist:
 		if word not in filterlist:
 			wordlist.append(word)
+	return tweet_wordlist
+	
+api = doAPI("twitter.auth")
 
-file=open("twitter.auth", "r")
-auth=["","","",""]		# Kein Plan ob das eleganter geht
-i = 0				# ich hasse mein Leben
-for line in file:		#
-	auth[i] = line.rstrip()	# Eleganz neu definiert
-	i+=1			#
-
-api = twitter.Api(consumer_key=auth[0],consumer_secret=auth[1],access_token_key=auth[2],access_token_secret=auth[3])	# I HAVE A AUTHENTICATION https://www.youtube.com/watch?v=3vDWWy4CMhE
 
 #print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
 
@@ -45,9 +43,15 @@ while len(new_tweets) > 0:
 	lastID = tweets[-1].id - 1
 
 for tweet in tweets:    		
-	getWords(tweet)
+	words_inTweet = getWords(tweet)
 	pprint(tweet)							# Tweets aufschreiben
 	pprint("")							# und säuberlich trennen
+	
+	if(len(badWordList) > 0):
+		deleteIfBadWord(api, tweet, words_inTweet, badWordList)
+	else:
+		print "Keine badWordList angegeben, also keine Löschungen"
+	
 
 counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen
 pprint(counts)								#pretty print the top ten

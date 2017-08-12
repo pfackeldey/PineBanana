@@ -3,13 +3,13 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.optimizers import RMSprop
-from keras.utils.data_utils import get_file
 import numpy as np
 import random
 import sys
 
-path = get_file('tweets.txt')
+path = 'tweets.txt'
 text = open(path).read().lower()
+text = text.translate(None , "#%&*/:;<>@[]_`{|}~")
 print('corpus length:', len(text))
 
 chars = sorted(list(set(text)))
@@ -20,18 +20,19 @@ indices_char = dict((i, c) for i, c in enumerate(chars))
 # cut the text in semi-redundant sequences of maxlen characters
 maxlen = 40
 step = 3
-sentences = []
+tweets = []
 next_chars = []
 for i in range(0, len(text) - maxlen, step):
-    sentences.append(text[i: i + maxlen])
+    tweets.append(text[i: i + maxlen])
     next_chars.append(text[i + maxlen])
-print('nb sequences:', len(sentences))
+print('nb sequences:', len(tweets))
+#print(next_chars)
 
 print('Vectorization...')
-X = np.zeros((len(sentences), maxlen, len(chars)), dtype=np.bool)
-y = np.zeros((len(sentences), len(chars)), dtype=np.bool)
-for i, sentence in enumerate(sentences):
-    for t, char in enumerate(sentence):
+X = np.zeros((len(tweets), maxlen, len(chars)), dtype=np.bool)
+y = np.zeros((len(tweets), len(chars)), dtype=np.bool)
+for i, tweet in enumerate(tweets):
+    for t, char in enumerate(tweet):
         X[i, t, char_indices[char]] = 1
     y[i, char_indices[next_chars[i]]] = 1
 
@@ -43,7 +44,7 @@ model.add(LSTM(128, input_shape=(maxlen, len(chars))))
 model.add(Dense(len(chars)))
 model.add(Activation('softmax'))
 
-optimizer = RMSprop(lr=0.01)
+optimizer = RMSprop(lr=0.025)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
 
@@ -67,19 +68,19 @@ for iteration in range(1, 60):
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 
-    for diversity in [0.2, 0.5, 1.0, 1.2]:
+    for diversity in [0.3, 0.4, 0.5, 0.6]:
         print()
         print('----- diversity:', diversity)
 
         generated = ''
-        sentence = text[start_index: start_index + maxlen]
-        generated += sentence
-        print('----- Generating with seed: "' + sentence + '"')
+        tweet = text[start_index: start_index + maxlen]
+        generated += tweet
+        print('----- Generating with seed: "' + tweet + '"')
         sys.stdout.write(generated)
 
         for i in range(400):
             x = np.zeros((1, maxlen, len(chars)))
-            for t, char in enumerate(sentence):
+            for t, char in enumerate(tweet):
                 x[0, t, char_indices[char]] = 1.
 
             preds = model.predict(x, verbose=0)[0]
@@ -87,7 +88,7 @@ for iteration in range(1, 60):
             next_char = indices_char[next_index]
 
             generated += next_char
-            sentence = sentence[1:] + next_char
+            tweet = tweet[1:] + next_char
 
             sys.stdout.write(next_char)
             sys.stdout.flush()

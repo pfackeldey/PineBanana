@@ -9,7 +9,7 @@ import sys
 
 path = 'tweets.txt'
 text = open(path).read().lower()
-text = text.translate(None , "#%&*/:;<>@[]_`{|}~")
+text = text.translate(None , "%&*;<>[]_`{|}~")
 print('corpus length:', len(text))
 
 chars = sorted(list(set(text)))
@@ -44,7 +44,7 @@ model.add(LSTM(128, input_shape=(maxlen, len(chars))))
 model.add(Dense(len(chars)))
 model.add(Activation('softmax'))
 
-optimizer = RMSprop(lr=0.025)
+optimizer = RMSprop(lr=0.01)
 model.compile(loss='categorical_crossentropy', optimizer=optimizer)
 
 

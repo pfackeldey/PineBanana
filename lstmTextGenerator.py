@@ -3,13 +3,19 @@ from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.layers import LSTM
 from keras.optimizers import RMSprop
+import string
 import numpy as np
 import random
 import sys
 
 path = 'tweets.txt'
 text = open(path).read().lower()
-text = text.translate(None , "%&*;<>[]_`{|}~")
+if sys.version_info < (3, 0):
+    #for use of python 2
+    text = text.translate(None , "%&*;<>[]_`{|}~")
+else:
+    #python 3
+    text = text.translate(str.maketrans("%&*;<>[]_`{|}~", "              "))
 print('corpus length:', len(text))
 
 chars = sorted(list(set(text)))

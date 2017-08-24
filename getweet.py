@@ -38,13 +38,13 @@ def setBorders(filename):
 	try:
 		with open(filename) as myfile:
 			latestID = int(myfile.readline())
-			pprint(latestID)
+			#pprint(latestID)
 		updateUpperBorder(latestID)
 	except IOError:
 		print("Borders.txt not found... Making up borders and Mexico will pay for it...")
 		newestTweet = api.GetUserTimeline(screen_name=target, count=1, exclude_replies=1, include_rts=0)
-		pprint(newestTweet[0].text)
-		pprint(newestTweet[0].id)
+		#pprint(newestTweet[0].text)
+		#pprint(newestTweet[0].id)
 		tweets.extend(newestTweet)
 		lastID = newestTweet[0].id - 1
 		latestID = newestTweet[0].id

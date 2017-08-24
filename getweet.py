@@ -12,7 +12,7 @@ lastID = 0
 tweets = []
 new_tweets = []
 wordlist = [""]
-filterlist = ["&amp;"] #Um z.B. "ich" oder "-" rauszuholen oder so
+filterlist = ["&amp;", '&amp;'] #Um z.B. "ich" oder "-" rauszuholen oder so
 badWordList = [] #Experiment zum Löschen von Tweets in denen Keywords stehen
 target = sys.argv[1] #Wessen Tweets lesen? Jetzt über das erste Argument der Konsole spezifiziert
 
@@ -130,6 +130,6 @@ for tweet in tweets:
 
 
 counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen
-#pprint(counts)								#pretty print the top ten
+pprint(counts)								#pretty print the top ten
 pprint(len(tweets))
 saveBorders("Borders.txt",str(latestID))					

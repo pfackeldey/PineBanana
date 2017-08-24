@@ -24,7 +24,7 @@ char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
 # cut the text in semi-redundant sequences of maxlen characters
-maxlen = 40
+maxlen = 60
 step = 3
 tweets = []
 next_chars = []
@@ -64,17 +64,17 @@ def sample(preds, temperature=1.0):
     return np.argmax(probas)
 
 # train the model, output generated text after each iteration
-for iteration in range(1, 60):
+for iteration in range(1, 50):
     print()
     print('-' * 50)
     print('Iteration', iteration)
     model.fit(X, y,
               batch_size=128,
-              epochs=1)
+              epochs=2)
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 
-    for diversity in [0.3, 0.4, 0.5, 0.6]:
+    for diversity in [0.35, 0.4, 0.5, 0.6, 0.65]:
         print()
         print('----- diversity:', diversity)
 

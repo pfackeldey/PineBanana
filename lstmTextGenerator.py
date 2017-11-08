@@ -24,8 +24,8 @@ char_indices = dict((c, i) for i, c in enumerate(chars))
 indices_char = dict((i, c) for i, c in enumerate(chars))
 
 # cut the text in semi-redundant sequences of maxlen characters
-maxlen = 30
-step = 3
+maxlen = 24
+step = 2
 tweets = []
 next_chars = []
 for i in range(0, len(text) - maxlen, step):
@@ -69,8 +69,8 @@ for iteration in range(1, 50):
     print('-' * 50)
     print('Iteration', iteration)
     model.fit(X, y,
-              batch_size=128,
-              epochs=3)
+              batch_size=94,
+              epochs=2)
 
     start_index = random.randint(0, len(text) - maxlen - 1)
 

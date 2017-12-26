@@ -12,7 +12,7 @@ lastID = 0
 tweets = []
 new_tweets = []
 wordlist = [""]
-filterlist = ["&amp;", '&amp;'] #Um z.B. "ich" oder "-" rauszuholen oder so
+filterlist = [" &amp;", '&amp;'] #Um z.B. "ich" oder "-" rauszuholen oder so
 badWordList = [] #Experiment zum Löschen von Tweets in denen Keywords stehen
 target = sys.argv[1] #Wessen Tweets lesen? Jetzt über das erste Argument der Konsole spezifiziert
 
@@ -124,6 +124,8 @@ for tweet in tweets:
 
 	#clean Tweet.text
 	clean = unicode(tweet.text).encode('UTF-8','ignore') + "\n\n"
+	while len(clean)<=300:			#fill to 300 chars
+		clean+="_"					#do it in the worst possible way ever
 
 	FileSave("tweets.txt", clean)
 	

@@ -17,13 +17,11 @@ def doAPI(authfile):
 	return api
 
 def deleteIfBadWord(api, tweet, words_inTweet, badWordList):
-	print "Suche löschenswürdige Tweets..."
+	print ("Suche löschenswürdige Tweets...")
 	for word in words_inTweet:
 		if word in badWordList:
-			print "Ich lösche für dich den folgenden Tweet:"
+			print ("Ich lösche für dich den folgenden Tweet:")
 			pprint(tweet.text)
 			api.DestroyStatus(tweet.id)
 			os.system('clear')
-	os.system('clear')	
-	
-
+	os.system('clear')

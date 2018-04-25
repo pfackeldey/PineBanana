@@ -30,9 +30,9 @@ def getWords(tweet):
 def FileSave(filename,content):
     with open(filename, "a") as myfile:
         myfile.writelines(content)
-        
+
 def setBorders(filename):
-	print "Setting borders..."
+	print ("Setting borders...")
 	global latestID	#ich bin genervt. Geht das nicht irgendwie sinnvoller?
 	global lastID	#ich bin genervt. Geht das nicht irgendwie sinnvoller?
 	try:
@@ -49,38 +49,38 @@ def setBorders(filename):
 		lastID = newestTweet[0].id - 1
 		latestID = newestTweet[0].id
 		createTweetBase()
-	
+
 def saveBorders(filename,currlatestID):
-	print "Saving borders..."
+	print ("Saving borders...")
 	with open(filename, "w") as myfile:
 		myfile.writelines(currlatestID)
-		
+
 def updateUpperBorder(currlatestID):
-	print "Updating upper border..."
+	print ("Updating upper border...")
 	newestTweetCandidate = api.GetUserTimeline(screen_name=target, count=1, exclude_replies=1, include_rts=0)
 	if newestTweetCandidate[0].id != currlatestID:
-		print "Newest Tweet has ID:\t" + str(newestTweetCandidate[0].id)
+		print ("Newest Tweet has ID:\t" + str(newestTweetCandidate[0].id))
 		pprint(newestTweetCandidate[0].text)
-		print "Older Tweet had ID:\t" + str(currlatestID)
-		
+		print ("Older Tweet had ID:\t" + str(currlatestID))
+
 		newlatestID = newestTweetCandidate[0].id
 		updateTweetBase(newlatestID)
 
 def createTweetBase():
-	print "Creating Tweet Database..."
+	print ("Creating Tweet Database...")
 	global lastID
 	new_tweets = api.GetUserTimeline(screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0,)
 	tweets.extend(new_tweets)
-		
+
 	while len(new_tweets) > 0:
 		lastID = tweets[-1].id - 1
-		
-		print "Getting tweets before ", tweets[-1].created_at
+
+		print ("Getting tweets before ", tweets[-1].created_at)
 		new_tweets = api.GetUserTimeline(screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0)
 		tweets.extend(new_tweets)
-		
+
 def updateTweetBase(newlatestID):
-	print "Updating Tweet Database..."
+	print ("Updating Tweet Database...")
 	global lastID
 	global latestID
 	lastID = newlatestID
@@ -89,22 +89,22 @@ def updateTweetBase(newlatestID):
 		if tweet.id != latestID:
 			pprint(tweet.id)
 			pprint(latestID)
-			print ""
+			print ("")
 			tweets.append(tweet)
 		else:
 			return 0
-		
+
 	while len(new_tweets) > 0:
 		lastID = tweets[-1].id - 1
-		print "Getting tweets before ", tweets[-1].created_at
+		print ("Getting tweets before ", tweets[-1].created_at)
 		new_tweets = api.GetUserTimeline(screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0)
 		for tweet in new_tweets:
 			if tweet.id != latestID:
 				tweets.append(tweet)
 			else:
 				return 0
-			
-			
+
+
 	latestID = newlatestID
 
 
@@ -128,10 +128,10 @@ for tweet in tweets:
 		clean+="_"					#do it in the worst possible way ever
 
 	FileSave("tweets.txt", clean)
-	
+
 
 
 counts = Counter(wordlist).most_common(50)				#50 häufigste Worte in allen tweets zusammen
 pprint(counts)								#pretty print the top ten
 pprint(len(tweets))
-saveBorders("Borders.txt",str(latestID))					
+saveBorders("Borders.txt",str(latestID))

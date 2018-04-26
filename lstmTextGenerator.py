@@ -11,10 +11,10 @@ import sys
 path = 'tweets.txt'
 text = open(path).read().lower()
 if sys.version_info < (3, 0):
-    #for use of python 2
-    text = text.translate(None , "%&*;<>[]_`{|}~")
+    # for use of python 2
+    text = text.translate(None, "%&*;<>[]_`{|}~")
 else:
-    #python 3
+    # python 3
     text = text.translate(str.maketrans("%&*;<>[]_`{|}~", "              "))
 print('corpus length:', len(text))
 
@@ -32,7 +32,7 @@ for i in range(0, len(text) - maxlen, step):
     tweets.append(text[i: i + maxlen])
     next_chars.append(text[i + maxlen])
 print('nb sequences:', len(tweets))
-#print(next_chars)
+# print(next_chars)
 
 print('Vectorization...')
 X = np.zeros((len(tweets), maxlen, len(chars)), dtype=np.bool)
@@ -62,6 +62,7 @@ def sample(preds, temperature=1.0):
     preds = exp_preds / np.sum(exp_preds)
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
+
 
 # train the model, output generated text after each iteration
 for iteration in range(1, 50):

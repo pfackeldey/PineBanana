@@ -14,22 +14,23 @@ text = open(path).read().lower()
 tweets = open(path).read().lower().split("\n\n")
 
 if sys.version_info < (3, 0):
-    #for use of python 2
-    text = text.translate(None , "%&*;<>[]`{|}~")
+    # for use of python 2
+    text = text.translate(None, "%&*;<>[]`{|}~")
     for tweet in tweets:
-		tweet = tweet.translate(None , "%&*;<>[]`{|}~")
-        	while len(tweet)<=300:
-			tweet += "_"
+        tweet = tweet.translate(None, "%&*;<>[]`{|}~")
+        while len(tweet) <= 300:
+            tweet += "_"
 else:
-    #python 3
+    # python 3
     text = text.translate(str.maketrans("%&*;<>[]`{|}~", "              "))
     for tweet in tweets:
-		tweet = tweet.translate(str.maketrans("%&*;<>[]`{|}~", "              "))
-		while len(tweet)<=300:
-		    tweet += "_"
+        tweet = tweet.translate(str.maketrans(
+            "%&*;<>[]`{|}~", "              "))
+        while len(tweet) <= 300:
+            tweet += "_"
 
 print('corpus length:', len(text))
-#print('average tweet length: ', ) 		# looks not right. not in the mood of fixing atm.
+# print('average tweet length: ', ) 		# looks not right. not in the mood of fixing atm.
 
 chars = sorted(list(set(text)))
 print('total chars:', len(chars))
@@ -45,7 +46,7 @@ for i in range(0, len(text) - maxlen, step):
     tweets.append(text[i: i + maxlen])
     next_chars.append(text[i + maxlen])
 print('nb sequences:', len(tweets))
-#print(next_chars)
+# print(next_chars)
 
 print('Vectorization...')
 X = np.zeros((len(tweets), maxlen, len(chars)), dtype=np.bool)
@@ -76,6 +77,7 @@ def sample(preds, temperature=1.0):
     probas = np.random.multinomial(1, preds, 1)
     return np.argmax(probas)
 
+
 # train the model, output generated text after each iteration
 for iteration in range(1, 50):
     print()
@@ -85,7 +87,7 @@ for iteration in range(1, 50):
               batch_size=300,
               epochs=1)
 
-    start_index = 300 * np.random.randint(len(tweets),size=1)
+    start_index = 300 * np.random.randint(len(tweets), size=1)
 
     for diversity in [0.3, 0.4, 0.5, 0.6]:
         print()

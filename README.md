@@ -1,3 +1,5 @@
+[![Build Status](https://www.travis-ci.org/pfackeldey/PineBanana.svg?branch=master)](https://www.travis-ci.org/pfackeldey/PineBanana)
+
 # PineBanana
 Trying to train a NN to tweet like Donald J. Trump (or any other Twitter user that has a certain "style").
 
@@ -14,7 +16,7 @@ Put a file named twitter.auth next to getweet.py wich contains the following in 
 # Usage
 Start listing tweets: `python getweet.py <Twitter handle>`, where `<Twitter handle>` is the Twitter handle of the person you want the NN to try to imitate.
 
-Start training: `python lstmTextGenerator.py`, simple as that. 
+Start training: `python lstmTextGenerator.py`, simple as that.
 
 # Known issues
 * it just isn't there yet

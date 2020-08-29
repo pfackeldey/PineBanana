@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
-
 import re
 import os
 from pprint import pprint
 
-import twitter
+import tweepy
 
 
 def flattenList(listOfLists):
@@ -45,9 +44,14 @@ def doAPI(authfile):
         auth[i] = line.rstrip()  # Eleganz neu definiert
         i += 1			#
 
-    # I HAVE A AUTHENTICATION https://www.youtube.com/watch?v=3vDWWy4CMhE
-    api = twitter.Api(consumer_key=auth[0], consumer_secret=auth[1],
-                      access_token_key=auth[2], access_token_secret=auth[3])
+    oauth = tweepy.OAuthHandler(auth[0], auth[1])
+    oauth.set_access_token(auth[2], auth[3])
+    api = tweepy.API(oauth, wait_on_rate_limit=True, wait_on_rate_limit_notify=True)
+    
+    # test authentication
+    if (not api):
+        pprint("Can't authenticate")
+        
     return api
 
 

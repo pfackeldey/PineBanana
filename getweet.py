@@ -1,152 +1,214 @@
 # -*- coding: utf-8 -*-
-import sys
-import twitter
-import unicodedata
-import json
-
-from idna import unicode
-
-from tools import *
-from collections import *
 from pprint import pprint
+from pymongo import MongoClient
+from pymongo.errors import BulkWriteError
+from tools import *
+import argparse
 
-latestID = 0
-lastID = 0
-tweets = []
-new_tweets = []
-wordlist = [""]
-filterlist = [" &amp;", '&amp;']  # Um z.B. "ich" oder "-" rauszuholen oder so
+# configure mongoDB
+client = MongoClient("localhost:27017")
+db=client.PineBanana
+serverStatusResult=db.command("serverStatus")
+
+def printServerStatus():
+    pprint(serverStatusResult)
+
+
 badWordList = []  # Experiment zum Löschen von Tweets in denen Keywords stehen
-# Wessen Tweets lesen? Jetzt über das erste Argument der Konsole spezifiziert
-target = sys.argv[1]
+description = "Dieses Program lädt so viele Tweets eines Users herunter wie möglich und speichert sie in Rohform."
+# initiate the argument parser
+parser = argparse.ArgumentParser(description = description)
+parser.add_argument("user", help="Der hinzuzufügende Twitter-Nutzer (ohne vorangestelltes @)", nargs='?', default="etiennetogo")
+
+user = parser.parse_args().user
 
 api = doAPI("twitter.auth")
-# print(api.VerifyCredentials()) #Um zu gucken ob Auth grundsätzlich klappt
+#pprint(api) #Um zu gucken ob Auth grundsätzlich klappt
+
+# uses the api to load all (available, usually about the last 3000) tweets of a user
+# default user is me.
+def getAllTweetsByUser(user="haqfleisch"):
+
+    print("Getting tweets by", user)
+
+    tweets = []
+
+    result = api.user_timeline(user, count=200, tweet_mode="extended")
+
+    tweets.extend(result)
+
+    # newest tweet
+    first = tweets[0].id
+
+    # oldest tweet
+    oldest = tweets[-1].id - 1
 
 
-def getWords(tweet):
-    tweet_wordlist = str.split(tweet.text.lower())
-#	print tweet_wordlist
-    for word in tweet_wordlist:
-        if word not in filterlist:
-            wordlist.append(word)
-    return tweet_wordlist
+    while len(result) > 0:
+        pprint("getting tweets before %s" % (oldest))
 
+        # all subsiquent requests use the max_id param to prevent duplicates
+        result = api.user_timeline(user,count=200, max_id=oldest, tweet_mode="extended")
 
-def FileSave(filename, content):
-    with open(filename, "a") as myfile:
-        myfile.writelines(content)
+        # save most recent tweets
+        tweets.extend(result)
 
+        # update the id of the oldest tweet less one
+        oldest = tweets[-1].id - 1
 
-def setBorders(filename):
-    print("Setting borders...")
-    global latestID  # ich bin genervt. Geht das nicht irgendwie sinnvoller?
-    global lastID  # ich bin genervt. Geht das nicht irgendwie sinnvoller?
-    try:
-        with open(filename) as myfile:
-            latestID = int(myfile.readline())
-            # pprint(latestID)
-        updateUpperBorder(latestID)
-    except IOError:
-        print("Borders.txt not found... Making up borders and Mexico will pay for it...")
-        newestTweet = api.GetUserTimeline(
-            screen_name=target, count=1, exclude_replies=1, include_rts=0)
-        # pprint(newestTweet[0].text)
-        # pprint(newestTweet[0].id)
-        tweets.extend(newestTweet)
-        lastID = newestTweet[0].id - 1
-        latestID = newestTweet[0].id
-        createTweetBase()
+        pprint("...%s tweets downloaded so far" % (len(tweets)))
 
+    return tweets, oldest, first
 
-def saveBorders(filename, currlatestID):
-    print("Saving borders...")
-    with open(filename, "w") as myfile:
-        myfile.writelines(currlatestID)
+# Funktion zum Laden der Tweets von Personen, die noch nicht in der Datenbank sind
+def saveInitialBatchForUser(user="haqfleisch"):
+    tweets, oldestId, newestId = getAllTweetsByUser(user)
 
+    tweetIds = set()
+    no_retweet_list = list()
 
-def updateUpperBorder(currlatestID):
-    print("Updating upper border...")
-    newestTweetCandidate = api.GetUserTimeline(
-        screen_name=target, count=1, exclude_replies=1, include_rts=0)
-    if newestTweetCandidate[0].id != currlatestID:
-        print("Newest Tweet has ID:\t" + str(newestTweetCandidate[0].id))
-        pprint(newestTweetCandidate[0].text)
-        print("Older Tweet had ID:\t" + str(currlatestID))
-
-        newlatestID = newestTweetCandidate[0].id
-        updateTweetBase(newlatestID)
-
-
-def createTweetBase():
-    print("Creating Tweet Database...")
-    global lastID
-    new_tweets = api.GetUserTimeline(
-        screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0,)
-    tweets.extend(new_tweets)
-
-    while len(new_tweets) > 0:
-        lastID = tweets[-1].id - 1
-
-        print("Getting tweets before ", tweets[-1].created_at)
-        new_tweets = api.GetUserTimeline(
-            screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0)
-        tweets.extend(new_tweets)
-
-
-def updateTweetBase(newlatestID):
-    print("Updating Tweet Database...")
-    global lastID
-    global latestID
-    lastID = newlatestID
-    new_tweets = api.GetUserTimeline(
-        screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0)
-    for tweet in new_tweets:
-        if tweet.id != latestID:
-            pprint(tweet.id)
-            pprint(latestID)
-            print("")
-            tweets.append(tweet)
+    for status in tweets:
+        pprint(len(tweets))
+        
+        # remove retweets
+        if status._json['retweeted'] or status._json["full_text"].startswith("RT"):
+            pprint(status._json["full_text"])
+            pprint("Removed retweet %s" % status._json['id'])
         else:
-            return 0
+            pprint("Saving Id")
+            no_retweet_list.append(status._json)
+            tweetIds.add(status.id)
+            
+    pprint(len(no_retweet_list))
+    #pprint(list(tweetIds)) # for debugging
 
-    while len(new_tweets) > 0:
-        lastID = tweets[-1].id - 1
-        print("Getting tweets before ", tweets[-1].created_at)
-        new_tweets = api.GetUserTimeline(
-            screen_name=target, max_id=lastID, count=200, exclude_replies=1, include_rts=0)
-        for tweet in new_tweets:
-            if tweet.id != latestID:
-                tweets.append(tweet)
-            else:
-                return 0
+    try:
+        tweetSaveResult = db.raw.insert_many(no_retweet_list, ordered=False)
 
-    latestID = newlatestID
+        twitterUser = api.get_user(user)
+
+        userSaveResult = db.users.insert_one(
+            {
+                "user": user.lower(),
+                "user_id": twitterUser.id,
+                "newestId": newestId,
+                "oldestId": oldestId+1,
+                "tweetIds": list(tweetIds),
+
+            })
+
+        print("Saved {} of {} Tweets".format(len(tweetSaveResult.inserted_ids), len(tweetIds)))
+        print("Informationen erfolgreich gespeichert: ", userSaveResult.acknowledged)
+    except BulkWriteError as bwe:
+        print("There were some errors. If they are important and not just pointless duplicate-item warnings, they will be shown below.")
+
+        # filter duplicate item errors
+        panic = list(filter(lambda x: x['code'] != 11000, bwe.details['writeErrors']))
+
+        if len(panic) > 0:
+          pprint(panic)
+
+    # we want tweet-id and users to be unique
+    db.raw.create_index("id", unique=True)
+    db.users.create_index("user", unique=True)
+    
+
+def saveNextBatchForUser(user="haqfleisch"):
+    dbuser = db.users.find_one({"user": user})
+    oldest = dbuser["oldestId"]
+    first = dbuser["newestId"]
+    tweetIds = dbuser["tweetIds"]
+    
+    print("Getting new tweets by", user)
+
+    tweets = []
+
+    result = api.user_timeline(user, count=200, since_id=first, tweet_mode="extended")
+
+    tweets.extend(result)
+    
+    # if there are new tweets
+    if len(tweets) > 0:
+        first = tweets[0].id # update first tweet id
+        last_of_new_batch = tweets[-1].id - 1
+        
+        # continue getting newest tweets
+        while len(result) > 0:
+            result = api.user_timeline(user, count=200, since_id=first, max_id=last_of_new_batch, tweet_mode="extended")
+    
+            tweets.extend(result)
+            
+            # new newest tweet
+            first = tweets[0].id
+            last_of_new_batch = tweets[-1].id - 1
 
 
-setBorders("Borders.txt")
-# print upperBorder
+    while len(result) > 0:
+        pprint("getting tweets before %s" % (oldest))
 
-for tweet in tweets:
-    words_inTweet = getWords(tweet)
-    # pprint(tweet)							# Tweets aufschreiben
-    # pprint("")							# und säuberlich trennen
+        # all subsiquent requests use the max_id param to prevent duplicates
+        result = api.user_timeline(user,count=200, max_id=oldest, tweet_mode="extended")
 
-    if(len(badWordList) > 0):
-        deleteIfBadWord(api, tweet, words_inTweet, badWordList)
-    # else:
-    #	print "Keine badWordList angegeben, also keine Löschungen\n"
+        # save most recent tweets
+        tweets.extend(result)
 
-    # clean Tweet.text
-    clean = tweet.text + "\n\n"
-    while len(clean) <= 300:  # fill to 300 chars
-        clean += "_"  # do it in the worst possible way ever
+        # update the id of the oldest tweet less one
+        oldest = tweets[-1].id - 1
 
-    FileSave("tweets.txt", clean)
+        pprint("...%s tweets downloaded so far" % (len(tweets)))
 
 
-# 50 häufigste Worte in allen tweets zusammen
-counts = Counter(wordlist).most_common(50)
-pprint(counts)  # pretty print the top ten
-pprint(len(tweets))
-saveBorders("Borders.txt", str(latestID))
+    tweetIds = set(tweetIds)
+    no_retweet_list = list()
+
+    for status in tweets:
+        pprint(len(tweets))
+        
+        # remove retweets
+        if status._json['retweeted'] or status._json["full_text"].startswith("RT"):
+            pprint(status._json["full_text"])
+            pprint("Removed retweet %s" % status._json['id'])
+        else:
+            pprint("Saving Id")
+            no_retweet_list.append(status._json)
+            tweetIds.add(status.id)
+            
+    pprint(len(no_retweet_list))
+    #pprint(list(tweetIds)) # for debugging
+
+    try:
+        tweetSaveResult = db.raw.insert_many(no_retweet_list, ordered=False)
+
+        twitterUser = api.get_user(user)
+
+        userSaveResult = db.users.replace_one({"user": user},
+            {
+                "user": user.lower(),
+                "user_id": twitterUser.id,
+                "newestId": first,
+                "oldestId": oldest+1,
+                "tweetIds": list(tweetIds)
+            })
+
+        print("Saved {} of {} Tweets".format(len(tweetSaveResult.inserted_ids), len(tweetIds)))
+        print("Informationen erfolgreich gespeichert: ", userSaveResult.acknowledged)
+    except BulkWriteError as bwe:
+        print("There were some errors. If they are important and not just pointless duplicate-item warnings, they will be shown below.")
+
+        # filter duplicate item errors
+        panic = list(filter(lambda x: x['code'] != 11000, bwe.details['writeErrors']))
+
+        if len(panic) > 0:
+          pprint(panic)
+
+    # we want tweet-id and users to be unique
+    db.raw.create_index("id", unique=True)
+    db.users.create_index("user", unique=True)
+
+
+if db.users.find_one({"user": user}):
+    pprint("User already exists")
+    saveNextBatchForUser(user)
+else:
+    saveInitialBatchForUser(user)
+

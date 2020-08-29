@@ -2,6 +2,9 @@
 
 import re
 import os
+from pprint import pprint
+
+import twitter
 
 
 def flattenList(listOfLists):

@@ -3,6 +3,9 @@ import sys
 import twitter
 import unicodedata
 import json
+
+from idna import unicode
+
 from tools import *
 from collections import *
 from pprint import pprint
@@ -22,7 +25,7 @@ api = doAPI("twitter.auth")
 
 
 def getWords(tweet):
-    tweet_wordlist = str.split(unicode(tweet.text).encode('UTF-8').lower())
+    tweet_wordlist = str.split(tweet.text.lower())
 #	print tweet_wordlist
     for word in tweet_wordlist:
         if word not in filterlist:
@@ -135,7 +138,7 @@ for tweet in tweets:
     #	print "Keine badWordList angegeben, also keine Löschungen\n"
 
     # clean Tweet.text
-    clean = unicode(tweet.text).encode('UTF-8', 'ignore') + "\n\n"
+    clean = tweet.text + "\n\n"
     while len(clean) <= 300:  # fill to 300 chars
         clean += "_"  # do it in the worst possible way ever
 

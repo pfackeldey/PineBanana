@@ -2,7 +2,7 @@
 from pprint import pprint
 from pymongo import MongoClient
 from pymongo.errors import BulkWriteError
-from tools import *
+from tools import doAPI
 import argparse
 
 # configure mongoDB
@@ -10,31 +10,24 @@ client = MongoClient("localhost:27017")
 db=client.PineBanana
 serverStatusResult=db.command("serverStatus")
 
-def printServerStatus():
-    pprint(serverStatusResult)
-
-
 badWordList = []  # Experiment zum Löschen von Tweets in denen Keywords stehen
 description = "Dieses Program lädt so viele Tweets eines Users herunter wie möglich und speichert sie in Rohform."
 # initiate the argument parser
 parser = argparse.ArgumentParser(description = description)
-parser.add_argument("user", help="Der hinzuzufügende Twitter-Nutzer (ohne vorangestelltes @)", nargs='?', default="etiennetogo")
+parser.add_argument("user", help="Der hinzuzufügende Twitter-Nutzer (ohne vorangestelltes @)", nargs='?', default="janboehm")
 
 user = parser.parse_args().user
 
 api = doAPI("twitter.auth")
 #pprint(api) #Um zu gucken ob Auth grundsätzlich klappt
 
-# uses the api to load all (available, usually about the last 3000) tweets of a user
-# default user is me.
-def getAllTweetsByUser(user="haqfleisch"):
-
+# Funktion zum Laden der Tweets von Personen, die noch nicht in der Datenbank sind
+def saveInitialBatchForUser(user="haqfleisch"):
     print("Getting tweets by", user)
 
     tweets = []
 
     result = api.user_timeline(user, count=200, tweet_mode="extended")
-
     tweets.extend(result)
 
     # newest tweet
@@ -58,12 +51,6 @@ def getAllTweetsByUser(user="haqfleisch"):
 
         pprint("...%s tweets downloaded so far" % (len(tweets)))
 
-    return tweets, oldest, first
-
-# Funktion zum Laden der Tweets von Personen, die noch nicht in der Datenbank sind
-def saveInitialBatchForUser(user="haqfleisch"):
-    tweets, oldestId, newestId = getAllTweetsByUser(user)
-
     tweetIds = set()
     no_retweet_list = list()
 
@@ -82,35 +69,8 @@ def saveInitialBatchForUser(user="haqfleisch"):
     pprint(len(no_retweet_list))
     #pprint(list(tweetIds)) # for debugging
 
-    try:
-        tweetSaveResult = db.raw.insert_many(no_retweet_list, ordered=False)
-
-        twitterUser = api.get_user(user)
-
-        userSaveResult = db.users.insert_one(
-            {
-                "user": user.lower(),
-                "user_id": twitterUser.id,
-                "newestId": newestId,
-                "oldestId": oldestId+1,
-                "tweetIds": list(tweetIds),
-
-            })
-
-        print("Saved {} of {} Tweets".format(len(tweetSaveResult.inserted_ids), len(tweetIds)))
-        print("Informationen erfolgreich gespeichert: ", userSaveResult.acknowledged)
-    except BulkWriteError as bwe:
-        print("There were some errors. If they are important and not just pointless duplicate-item warnings, they will be shown below.")
-
-        # filter duplicate item errors
-        panic = list(filter(lambda x: x['code'] != 11000, bwe.details['writeErrors']))
-
-        if len(panic) > 0:
-          pprint(panic)
-
-    # we want tweet-id and users to be unique
-    db.raw.create_index("id", unique=True)
-    db.users.create_index("user", unique=True)
+    saveTweets(no_retweet_list)
+    saveUser(user, first, oldest, tweetIds)
     
 
 def saveNextBatchForUser(user="haqfleisch"):
@@ -176,9 +136,28 @@ def saveNextBatchForUser(user="haqfleisch"):
     pprint(len(no_retweet_list))
     #pprint(list(tweetIds)) # for debugging
 
-    try:
-        tweetSaveResult = db.raw.insert_many(no_retweet_list, ordered=False)
+    saveTweets(no_retweet_list)
+    saveUser(user, first, oldest, tweetIds)
 
+def saveTweets(tweets):
+    try:
+        tweetSaveResult = db.raw.insert_many(tweets, ordered=False)
+        print("Saved {} of {} Tweets".format(len(tweetSaveResult.inserted_ids), len(tweets)))
+    except BulkWriteError as bwe:
+        print("There were some errors. If they are important and not just pointless duplicate-item warnings, they will be shown below.")
+
+        # filter duplicate item errors
+        panic = list(filter(lambda x: x['code'] != 11000, bwe.details['writeErrors']))
+
+        if len(panic) > 0:
+          pprint(panic)
+
+    # we want tweet-id to be unique
+    db.raw.create_index("id", unique=True)
+
+
+def saveUser(user, first, oldest, tweetIds):
+    try:
         twitterUser = api.get_user(user)
 
         userSaveResult = db.users.replace_one({"user": user},
@@ -188,9 +167,8 @@ def saveNextBatchForUser(user="haqfleisch"):
                 "newestId": first,
                 "oldestId": oldest+1,
                 "tweetIds": list(tweetIds)
-            })
+            }, upsert=True)
 
-        print("Saved {} of {} Tweets".format(len(tweetSaveResult.inserted_ids), len(tweetIds)))
         print("Informationen erfolgreich gespeichert: ", userSaveResult.acknowledged)
     except BulkWriteError as bwe:
         print("There were some errors. If they are important and not just pointless duplicate-item warnings, they will be shown below.")
@@ -201,10 +179,8 @@ def saveNextBatchForUser(user="haqfleisch"):
         if len(panic) > 0:
           pprint(panic)
 
-    # we want tweet-id and users to be unique
-    db.raw.create_index("id", unique=True)
+    # we want users to be unique
     db.users.create_index("user", unique=True)
-
 
 if db.users.find_one({"user": user}):
     pprint("User already exists")

@@ -1,15 +1,24 @@
-from __future__ import print_function
-from keras.models import Sequential
-from keras.layers import Dense, Activation
-from keras.layers import LSTM
-from keras.optimizers import RMSprop
-import string
 import numpy as np
-import random
 import sys
+from pymongo import MongoClient
+from pprint import pprint
+from pymongo.errors import BulkWriteError
+from nltk.tokenize import RegexpTokenizer
+from nltk.corpus import stopwords
+from keras.models import Sequential
+from keras.layers import Dense, Dropout, LSTM
+from keras.utils import np_utils
+from keras.callbacks import ModelCheckpoint
 
-path = 'tweets.txt'
-text = open(path).read().lower()
+# DB Import
+# configure mongoDB TODO: MongoConfig auslagern
+client = MongoClient("localhost:27017")
+db=client.PineBanana
+serverStatusResult=db.command("serverStatus")
+
+# TODO: Connect MongoDB clean collection to lstm trainer
+
+data = open(path).read().lower()
 if sys.version_info < (3, 0):
     # for use of python 2
     text = text.translate(None, "%&*;<>[]_`{|}~")
